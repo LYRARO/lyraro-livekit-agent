@@ -291,7 +291,6 @@ async def entrypoint(ctx: agents.JobContext):
         api_key=ELEVENLABS_API_KEY,
         voice_id=agent_config.get("voice_id", "EXAVITQu4vr4xnSDxMaL"),  # Sarah
         model="eleven_turbo_v2_5",
-        language_code="de",
     )
     
     # Create the agent session
