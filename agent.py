@@ -1,6 +1,5 @@
 """
 LYRARO Voice Agent - LiveKit + Deepgram + ElevenLabs + Lovable AI
-Fonio-Style Architecture for German Handcraft Businesses
 """
 
 import os
@@ -8,8 +7,8 @@ import json
 import aiohttp
 from datetime import datetime
 from livekit import agents
-from livekit.agents import AgentSession, Agent, RoomInputOptions
-from livekit.plugins import deepgram, elevenlabs
+from livekit.agents import AgentSession, Agent
+from livekit.plugins import deepgram, elevenlabs, openai
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -20,6 +19,7 @@ LIVEKIT_API_KEY = os.getenv("LIVEKIT_API_KEY")
 LIVEKIT_API_SECRET = os.getenv("LIVEKIT_API_SECRET")
 DEEPGRAM_API_KEY = os.getenv("DEEPGRAM_API_KEY")
 ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY")
+LOVABLE_API_KEY = os.getenv("LOVABLE_API_KEY")
 
 # Edge Function URLs
 EDGE_FUNCTION_BASE_URL = os.getenv("EDGE_FUNCTION_BASE_URL", "https://zistdjanhrbppnkdbanc.supabase.co/functions/v1")
@@ -233,14 +233,22 @@ async def entrypoint(ctx: agents.JobContext):
         model="eleven_turbo_v2_5",
     )
     
-    # Create agent session
-    session = AgentSession(
-        stt=stt,
-        tts=tts,
+    # Configure LLM (Lovable AI via OpenAI-compatible API)
+    llm = openai.LLM(
+        api_key=LOVABLE_API_KEY,
+        base_url="https://ai.gateway.lovable.dev/v1",
+        model="google/gemini-2.5-flash",
     )
     
     # Build system prompt
     system_prompt = build_system_prompt(agent_config)
+    
+    # Create agent session with LLM
+    session = AgentSession(
+        stt=stt,
+        llm=llm,
+        tts=tts,
+    )
     
     # Start the session with the agent
     await session.start(
@@ -257,7 +265,7 @@ async def entrypoint(ctx: agents.JobContext):
     
     # Send call ended webhook
     await send_webhook("call_ended", {
-        "duration_seconds": (datetime.now() - datetime.now()).total_seconds(),
+        "duration_seconds": 0,
     }, agent_config, call_id)
 
 
@@ -270,4 +278,3 @@ if __name__ == "__main__":
             ws_url=LIVEKIT_URL,
         )
     )
-
